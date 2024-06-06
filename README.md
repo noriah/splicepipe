@@ -39,10 +39,10 @@ directing an empty descriptor can prevent the reader from closing.
 as long as there is at least one writer, the fifo will remain open.
 
 ```sh
-3>/tmp/fifo
+3>/tmp/fifo &
 ```
 
-to get around this we can write a tool reads the fifo, piping the data to the plotter, and reopening the fifo whenever it closes.
+to get around this we can write a tool that reads the fifo, piping the data to the plotter, and reopening the fifo whenever it closes.
 
 ```sh
 fiforeader /tmp/fifo | wesplot
@@ -54,3 +54,19 @@ having to restart the tool any time i want to make changes to the plotter is als
 to fix this we can make a similar `fifowriter`.
 we could also make a fifo coupling.
 two separate fifos, read and written to by a middle program, which continues running and reopens the fifo handles any time a writer or reader closes.
+
+```sh
+splicepipe /tmp/input /tmp/output
+
+wesplot < /tmp/output &
+
+mytool > /tmp/intput
+```
+
+---
+
+i also needed to add a domain column to the data.
+due to how the plotter functions, i cannot add it to my tool, since the tool would reset to zero each time.
+this would produce bad plots.
+to fix this, the domain, which is just the line number, is added in the coupler.
+this way when the writer restarts, the plotter doesn't see that they started over.
