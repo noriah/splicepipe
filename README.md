@@ -26,9 +26,10 @@ i can point my tool at the fifo to write, read the fifo into the plotter.
 # make fifo
 mkfifo /tmp/fifo
 
-# start the plotter, forking to background
+# start the plotter, reading in from the fifo, forking to background
 wesplot < /tmp/fifo &
 
+# run tool, redirecting stdout to the fifo
 mytool > /tmp/fifo
 ```
 
@@ -39,13 +40,15 @@ directing an empty descriptor can prevent the reader from closing.
 as long as there is at least one writer, the fifo will remain open.
 
 ```sh
+# point unused descriptor at fifo to keep it open, forking to the background
 3>/tmp/fifo &
 ```
 
 to get around this we can write a tool that reads the fifo, piping the data to the plotter, and reopening the fifo whenever it closes.
 
 ```sh
-fiforeader /tmp/fifo | wesplot
+# run the fifo reader, piping the output into the plotter, forking to background
+fiforeader /tmp/fifo | wesplot &
 ```
 
 we have the same problem in the other direction. when the reader closes the fifo, the writer is closed too.
@@ -56,10 +59,13 @@ we could also make a fifo coupling.
 two separate fifos, read and written to by a middle program, which continues running and reopens the fifo handles any time a writer or reader closes.
 
 ```sh
-splicepipe /tmp/input /tmp/output
+# run the fifo coupler, forking to background
+splicepipe /tmp/input /tmp/output &
 
+# run the plotter, reading in from the output fifo, forking to background
 wesplot < /tmp/output &
 
+run the tool, writing to the output fifo
 mytool > /tmp/intput
 ```
 
